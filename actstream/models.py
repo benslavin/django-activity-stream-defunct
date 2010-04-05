@@ -1,5 +1,6 @@
 from operator import or_
 from django.db import models
+from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.core.urlresolvers import reverse
 from django.utils.timesince import timesince as timesince_
@@ -15,7 +16,7 @@ class FollowManager(models.Manager):
         Produces a QuerySet of most recent activities from actors the user follows
         """
         follows = self.filter(user=user)
-        qs = (Action.objects.stream_for_actor(follow.actor) for follow in follows)
+        qs = (Action.objects.stream_for_actor(follow.actor,user=user) for follow in follows)
         if follows.count():
             return reduce(or_, qs).order_by('-timestamp')
     
@@ -35,14 +36,40 @@ class Follow(models.Model):
         return u'%s -> %s' % (self.user, self.actor)
 
 class ActionManager(models.Manager):
-    def stream_for_actor(self, actor):
+    def stream_for_actor(self, actor, user=None):
         """
         Produces a QuerySet of most recent activities for any actor
         """
-        return self.filter(
+        result = self.filter(
             actor_content_type = ContentType.objects.get_for_model(actor),
             actor_object_id = actor.pk,
         ).order_by('-timestamp')
+        if user:
+            result = result.filter(
+                Q(public = True) |
+                (
+                    Q(actor_object_id=user.get_profile().id) &
+                    Q(actor_content_type=ContentType.objects.get_for_model(user.get_profile()))
+                )
+                |
+                (
+                    Q(target_object_id=user.get_profile().id) &
+                    Q(target_content_type=ContentType.objects.get_for_model(user.get_profile()))
+                )
+                |
+                (
+                    Q(actor_object_id=user.id) &
+                    Q(actor_content_type=ContentType.objects.get_for_model(user))
+                )
+                |
+                (
+                    Q(target_object_id=user.id) &
+                    Q(target_content_type=ContentType.objects.get_for_model(user))
+                )
+            )
+        else:
+            result = result.exclude(public=False)
+        return result
         
     def stream_for_model(self, model):
         """
@@ -87,6 +114,8 @@ class Action(models.Model):
     target_content_type = models.ForeignKey(ContentType,related_name='target',blank=True,null=True)
     target_object_id = models.PositiveIntegerField(blank=True,null=True) 
     target = generic.GenericForeignKey('target_content_type','target_object_id')
+
+    public = models.BooleanField(default=True)
     
     timestamp = models.DateTimeField(auto_now_add=True)
     
@@ -156,13 +185,14 @@ def model_stream(model):
 model_stream.__doc__ = Action.objects.stream_for_model.__doc__
 
     
-def action_handler(verb, target=None, **kwargs):
+def action_handler(verb, target=None, public=True, **kwargs):
     actor = kwargs.pop('sender')
     kwargs.pop('signal', None)
     kw = {
         'actor_content_type': ContentType.objects.get_for_model(actor),
         'actor_object_id': actor.pk,
-        'verb': verb
+        'verb': verb,
+		'public':public
     }
     if target:
         kw.update(target_object_id=target.pk,
