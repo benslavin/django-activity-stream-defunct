@@ -223,8 +223,8 @@ def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
             raise Exception("Invalid model/object: did not have a primary key: %s" % inst)
         try:
             subject_content_type = ContentType.objects.get_for_model(subject)
-        except AttributeError, inst:
-            raise Exception("Invalid model/object: was not a recognized content type: %s" % inst)
+        except Exception, inst:
+            raise Exception("Invalid model/object: was not a recognized content type: %s (%s)" % (inst,type(inst)))
             
     if target:
         kw.update(target_object_id=target.pk,
