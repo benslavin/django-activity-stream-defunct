@@ -225,6 +225,8 @@ def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
             subject_content_type = ContentType.objects.get_for_model(subject)
         except Exception, inst:
             raise Exception("Invalid model/object: was not a recognized content type: %s (%s)" % (inst,type(inst)))
+        kw.update(subject_object_id=subject_object_id,
+            subject_content_type=subject_content_type)
             
     if target:
         kw.update(target_object_id=target.pk,
