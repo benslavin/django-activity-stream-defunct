@@ -34,7 +34,7 @@ class Follow(models.Model):
     objects = FollowManager()
     
     def __unicode__(self):
-        return u'%s -> %s' % (self.user, self.actor)
+        return u'%s -> %s' % (self.user, self.subject)
 
 class ActionManager(models.Manager):
     def stream_for_actor(self, actor, user=None):
