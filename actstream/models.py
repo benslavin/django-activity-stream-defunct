@@ -145,47 +145,51 @@ class Action(models.Model):
         return ('actstream.views.detail', [self.pk])
         
 
-def follow(user, actor):
+def follow(user, subject):
     """
-    Creates a ``User`` -> ``Actor`` follow relationship such that the actor's activities appear in the user's stream.
-    Also sends the ``<user> started following <actor>`` action signal.
+    Creates a ``User`` -> ``Actor`` follow relationship such that the subject's activities appear in the user's stream.
+    Also sends the ``<user> started following <subject>`` action signal.
     Returns the created ``Follow`` instance
     
     Syntax::
     
-        follow(<user>, <actor>)
+        follow(<user>, <subject>)
     
     Example::
     
         follow(request.user, group)
     
     """
-    action.send(user, verb=_('started following'), target=actor)
-    return Follow.objects.create(user = user, object_id = actor.pk, 
-        content_type = ContentType.objects.get_for_model(actor))
+    action.send(user, verb=_('started following'), target=subject)
+    return Follow.objects.create(user = user, object_id = subject.pk, 
+        content_type = ContentType.objects.get_for_model(subject))
     
-def unfollow(user, actor, send_action=False):
+def unfollow(user, subject, send_action=False):
     """
     Removes ``User`` -> ``Actor`` follow relationship. 
-    Optionally sends the ``<user> stopped following <actor>`` action signal.
+    Optionally sends the ``<user> stopped following <subject>`` action signal.
     
     Syntax::
     
-        unfollow(<user>, <actor>)
+        unfollow(<user>, <subject>)
     
     Example::
     
         unfollow(request.user, other_user)
     
     """
-    Follow.objects.filter(user = user, object_id = actor.pk, 
-        content_type = ContentType.objects.get_for_model(actor)).delete()
+    Follow.objects.filter(user = user, object_id = subject.pk, 
+        content_type = ContentType.objects.get_for_model(subject)).delete()
     if send_action:
-        action.send(user, verb=_('stopped following'), target=actor)
+        action.send(user, verb=_('stopped following'), target=subject)
     
 def actor_stream(actor):
     return Action.objects.stream_for_actor(actor)
 actor_stream.__doc__ = Action.objects.stream_for_actor.__doc__
+    
+def subject_stream(subject):
+    return Action.objects.stream_for_subject(subject)
+subject_stream.__doc__ = Action.objects.stream_for_subject.__doc__
     
 def user_stream(user):
     return Follow.objects.stream_for_user(user)
