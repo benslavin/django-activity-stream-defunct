@@ -216,6 +216,7 @@ def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
         kw.update(subject_object_id=target.pk,
             subject_content_type=ContentType.objects.get_for_model(target))
     else:
+        raise Exception("Subject is [%s] (%s), which means %s and %s" % (subject,type(subject),(subject=='actor'),(subject=='target')))
         #assume the subject is some other model
         try:
             subject_object_id = subject.pk
