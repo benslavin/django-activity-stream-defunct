@@ -8,6 +8,7 @@ from django.utils.timesince import timesince as timesince_
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
+from django.conf import settings
 
 from actstream.signals import action
 
@@ -161,7 +162,8 @@ def follow(user, subject):
         follow(request.user, group)
     
     """
-    action.send(user, verb=_('started following'), target=subject)
+    if not (settings.get('ACTIVITY_HIDE_FOLLOWING')):
+        action.send(user, verb=_('started following'), target=subject)
     return Follow.objects.create(user = user, object_id = subject.pk, 
         content_type = ContentType.objects.get_for_model(subject))
     
