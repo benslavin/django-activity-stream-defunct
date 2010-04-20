@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext_lazy as _
 from django.utils.timesince import timesince as timesince_
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
@@ -119,6 +120,8 @@ class Action(models.Model):
     
     timestamp = models.DateTimeField(auto_now_add=True)
     
+    public = models.BooleanField(default=True)
+    
     objects = ActionManager()
     
     def __unicode__(self):
@@ -155,8 +158,9 @@ class Action(models.Model):
 
 def follow(user, actor):
     """
-    Links a ``User`` to any  ``Actor`` so that the actor's activities appear in the user's stream.
-    Also sends the ``action`` signal with args ``actor=<user>``, ``verb='started following'``, ``target=<actor>`` signal.
+    Creates a ``User`` -> ``Actor`` follow relationship such that the actor's activities appear in the user's stream.
+    Also sends the ``<user> started following <actor>`` action signal.
+    Returns the created ``Follow`` instance
     
     Syntax::
     
@@ -167,10 +171,28 @@ def follow(user, actor):
         follow(request.user, group)
     
     """
-    action.send(user, verb='started following', target=actor)
-    return Follow.objects.get_or_create(
-        user = user, object_id = actor.pk, 
-        content_type = ContentType.objects.get_for_model(actor))[0]
+    action.send(user, verb=_('started following'), target=actor)
+    return Follow.objects.create(user = user, object_id = actor.pk, 
+        content_type = ContentType.objects.get_for_model(actor))
+    
+def unfollow(user, actor, send_action=False):
+    """
+    Removes ``User`` -> ``Actor`` follow relationship. 
+    Optionally sends the ``<user> stopped following <actor>`` action signal.
+    
+    Syntax::
+    
+        unfollow(<user>, <actor>)
+    
+    Example::
+    
+        unfollow(request.user, other_user)
+    
+    """
+    Follow.objects.filter(user = user, object_id = actor.pk, 
+        content_type = ContentType.objects.get_for_model(actor)).delete()
+    if send_action:
+        action.send(user, verb=_('stopped following'), target=actor)
     
 def actor_stream(actor):
     return Action.objects.stream_for_actor(actor)
@@ -191,8 +213,8 @@ def action_handler(verb, target=None, public=True, **kwargs):
     kw = {
         'actor_content_type': ContentType.objects.get_for_model(actor),
         'actor_object_id': actor.pk,
-        'verb': verb,
-		'public':public
+        'verb': unicode(verb),
+        'public': bool(public),
     }
     if target:
         kw.update(target_object_id=target.pk,
