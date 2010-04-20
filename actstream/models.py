@@ -120,8 +120,6 @@ class Action(models.Model):
     
     timestamp = models.DateTimeField(auto_now_add=True)
     
-    public = models.BooleanField(default=True)
-    
     objects = ActionManager()
     
     def __unicode__(self):
