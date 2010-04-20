@@ -17,7 +17,7 @@ class FollowManager(models.Manager):
         Produces a QuerySet of most recent activities from actors the user follows
         """
         follows = self.filter(user=user)
-        qs = (Action.objects.stream_for_actor(follow.actor,user=user) for follow in follows)
+        qs = (Action.objects.stream_for_subject(follow.subject,user=user) for follow in follows)
         if follows.count():
             return reduce(or_, qs).order_by('-timestamp')
     
@@ -29,7 +29,7 @@ class Follow(models.Model):
     
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField() 
-    actor = generic.GenericForeignKey()
+    subject = generic.GenericForeignKey()
     
     objects = FollowManager()
     
@@ -40,37 +40,15 @@ class ActionManager(models.Manager):
     def stream_for_actor(self, actor, user=None):
         """
         Produces a QuerySet of most recent activities for any actor
+
+        Jordan: eventually we do need to filter out public/private actions, but for now
+                we'll just filter out private actions altogether.
         """
-        result = self.filter(
+        
+        return self.filter(
             actor_content_type = ContentType.objects.get_for_model(actor),
             actor_object_id = actor.pk,
-        ).order_by('-timestamp')
-        if user:
-            result = result.filter(
-                Q(public = True) |
-                (
-                    Q(actor_object_id=user.get_profile().id) &
-                    Q(actor_content_type=ContentType.objects.get_for_model(user.get_profile()))
-                )
-                |
-                (
-                    Q(target_object_id=user.get_profile().id) &
-                    Q(target_content_type=ContentType.objects.get_for_model(user.get_profile()))
-                )
-                |
-                (
-                    Q(actor_object_id=user.id) &
-                    Q(actor_content_type=ContentType.objects.get_for_model(user))
-                )
-                |
-                (
-                    Q(target_object_id=user.id) &
-                    Q(target_content_type=ContentType.objects.get_for_model(user))
-                )
-            )
-        else:
-            result = result.exclude(public=False)
-        return result
+        ).exclude(public=False).order_by('-timestamp')
         
     def stream_for_model(self, model):
         """
@@ -79,6 +57,15 @@ class ActionManager(models.Manager):
         return self.filter(
             actor_content_type = ContentType.objects.get_for_model(model),
         ).order_by('-timestamp')
+        
+    def stream_for_subject(self, subject, user=None):
+        """
+        Produces a QuerySet of most recent activities for a subject
+        """
+        return self.filter(
+            subject_content_type = ContentType.objects.get_for_model(subject),
+            subject_object_id = subject.pk,
+        ).exclude(public=False).order_by('-timestamp')
         
 class Action(models.Model):
     """
@@ -111,6 +98,10 @@ class Action(models.Model):
     
     verb = models.CharField(max_length=255)
     description = models.TextField(blank=True,null=True)
+    
+    subject_content_type = models.ForeignKey(ContentType,related_name='subject',blank=True,null=True)
+    subject_object_id = models.PositiveIntegerField(blank=True,null=True) 
+    subject = generic.GenericForeignKey('subject_content_type','subject_object_id')
     
     target_content_type = models.ForeignKey(ContentType,related_name='target',blank=True,null=True)
     target_object_id = models.PositiveIntegerField(blank=True,null=True) 
@@ -205,7 +196,7 @@ def model_stream(model):
 model_stream.__doc__ = Action.objects.stream_for_model.__doc__
 
     
-def action_handler(verb, target=None, public=True, **kwargs):
+def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
     actor = kwargs.pop('sender')
     kwargs.pop('signal', None)
     kw = {
@@ -214,6 +205,23 @@ def action_handler(verb, target=None, public=True, **kwargs):
         'verb': unicode(verb),
         'public': bool(public),
     }
+    if subject=='actor':
+        kw.update(subject_object_id=actor.pk,
+            subject_content_type=ContentType.objects.get_for_model(subject))
+    elif subject=='target':
+        kw.update(subject_object_id=target.pk,
+            subject_content_type=ContentType.objects.get_for_model(target))
+    else:
+        #assume the subject is some other model
+        try:
+            subject_object_id = subject.pk
+        except AttributeError, inst:
+            raise Exception("Invalid model/object: did not have a primary key: %s" % inst)
+        try:
+            subject_content_type = ContentType.objects.get_for_model(subject)
+        except AttributeError, inst:
+            raise Exception("Invalid model/object: was not a recognized content type: %s" % inst)
+            
     if target:
         kw.update(target_object_id=target.pk,
             target_content_type=ContentType.objects.get_for_model(target))
