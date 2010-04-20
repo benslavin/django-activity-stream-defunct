@@ -17,7 +17,7 @@ class FollowManager(models.Manager):
         Produces a QuerySet of most recent activities from subjects the user follows
         """
         follows = self.filter(user=user)
-        qs = (Action.objects.stream_for_subject(follow.subject,user=user) for follow in follows)
+        qs = (Action.objects.stream_for_subject(follow.subject,user=user).filter(timestamp__gt=follow.started) for follow in follows)
         if follows.count():
             return reduce(or_, qs).order_by('-timestamp')
     
@@ -30,6 +30,7 @@ class Follow(models.Model):
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField() 
     subject = generic.GenericForeignKey()
+    started = models.DateTimeField(auto_now_add=True)
     
     objects = FollowManager()
     
