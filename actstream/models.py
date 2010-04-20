@@ -211,7 +211,7 @@ def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
     }
     if subject=='actor':
         kw.update(subject_object_id=actor.pk,
-            subject_content_type=ContentType.objects.get_for_model(subject))
+            subject_content_type=ContentType.objects.get_for_model(actor))
     elif subject=='target':
         kw.update(subject_object_id=target.pk,
             subject_content_type=ContentType.objects.get_for_model(target))
