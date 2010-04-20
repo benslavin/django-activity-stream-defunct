@@ -14,7 +14,7 @@ from actstream.signals import action
 class FollowManager(models.Manager):
     def stream_for_user(self, user):
         """
-        Produces a QuerySet of most recent activities from actors the user follows
+        Produces a QuerySet of most recent activities from subjects the user follows
         """
         follows = self.filter(user=user)
         qs = (Action.objects.stream_for_subject(follow.subject,user=user) for follow in follows)
@@ -23,7 +23,7 @@ class FollowManager(models.Manager):
     
 class Follow(models.Model):
     """
-    Lets a user follow the activities of any specific actor
+    Lets a user follow the activities of any specific subject
     """
     user = models.ForeignKey(User)
     
