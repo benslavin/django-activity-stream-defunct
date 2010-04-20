@@ -220,7 +220,7 @@ def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
         try:
             subject_object_id = subject.pk
         except AttributeError, inst:
-            raise Exception("Invalid model/object: did not have a primary key: %s" % inst)
+            raise Exception("Invalid model/object: %s did not have a primary key: %s" % (subject,inst))
         try:
             subject_content_type = ContentType.objects.get_for_model(subject)
         except Exception, inst:
