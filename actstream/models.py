@@ -162,7 +162,7 @@ def follow(user, subject):
         follow(request.user, group)
     
     """
-    if not (settings.get('ACTIVITY_HIDE_FOLLOWING')):
+    if not getattr(settings, 'ACTIVITY_HIDE_FOLLOWING', False):
         action.send(user, verb=_('started following'), target=subject)
     return Follow.objects.create(user = user, object_id = subject.pk, 
         content_type = ContentType.objects.get_for_model(subject))
