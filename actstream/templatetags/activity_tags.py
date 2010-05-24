@@ -1,5 +1,6 @@
 from django.template import Variable, Library, Node, TemplateSyntaxError, TemplateDoesNotExist
 from django.template.loader import render_to_string
+import re
 
 class DisplayActionLabel(Node):
     def __init__(self, actor, varname=None):
@@ -43,6 +44,7 @@ class DisplayAction(Node):
             user = Variable("request.user").resolve(context)
         except:
             user = None
+        action_output = re.sub(r'\s+',' ',action_output)
         if user and user.is_staff:
             action_output = "<!-- start: %(template)s -->\n%(output)s\n<!-- end: %(template)s -->" % {'template':action_template, 'output':action_output}
         if self.varname is not None:
@@ -68,6 +70,7 @@ class DisplayActionShort(Node):
             user = Variable("request.user").resolve(context)
         except:
             user = None
+        action_output = re.sub(r'\s+',' ',action_output)
         if user and user.is_staff:
             action_output = "<!-- start: %(template)s -->\n%(output)s\n<!-- end: %(template)s -->" % {'template':action_template, 'output':action_output}
         if self.varname is not None:
