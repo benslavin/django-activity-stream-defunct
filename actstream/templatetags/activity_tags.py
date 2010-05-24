@@ -44,7 +44,7 @@ class DisplayAction(Node):
         except:
             user = None
         if user and user.is_staff:
-            action_output = "<!-- template: %s -->\n%s" % (action_template, action_output)
+            action_output = "<!-- start: %(template)s -->\n%(output)s\n<!-- end: %(template)s -->" % {'template':action_template, 'output':action_output}
         if self.varname is not None:
             context[self.varname] = action_output
             return ""
@@ -69,7 +69,7 @@ class DisplayActionShort(Node):
         except:
             user = None
         if user and user.is_staff:
-            action_output = "<!-- template: %s -->\n%s" % (action_template, action_output)
+            action_output = "<!-- start: %(template)s -->\n%(output)s\n<!-- end: %(template)s -->" % {'template':action_template, 'output':action_output}
         if self.varname is not None:
             context[self.varname] = action_output
             return ""
