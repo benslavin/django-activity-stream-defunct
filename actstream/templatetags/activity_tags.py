@@ -59,9 +59,17 @@ class DisplayActionShort(Node):
     def render(self, context):
         action_instance = self.action.resolve(context)
         try:
-            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }),{ 'hide_actor':True, 'action':action_instance },context)
+            action_template='activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }            
+            action_output = render_to_string(action_template,{ 'hide_actor':True, 'action':action_instance },context)
         except TemplateDoesNotExist:
-            action_output = render_to_string(('activity/action.html'),{ 'hide_actor':True, 'action':action_instance },context)
+            action_template='activity/action.html'            
+            action_output = render_to_string(action_template,{ 'hide_actor':True, 'action':action_instance },context)
+        try:
+            user = Variable("request.user").resolve(context)
+        except:
+            user = None
+        if user and user.is_staff:
+            action_output = "<!-- template: %s -->\n%s" % (action_template, action_output)
         if self.varname is not None:
             context[self.varname] = action_output
             return ""
