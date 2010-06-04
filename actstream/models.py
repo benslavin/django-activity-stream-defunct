@@ -17,10 +17,14 @@ class FollowManager(models.Manager):
         """
         Produces a QuerySet of most recent activities from subjects the user follows
         """
-        follows = self.filter(user=user)
-        qs = (Action.objects.stream_for_subject(follow.subject,user=user).filter(timestamp__gt=follow.started) for follow in follows if follow.subject != None)
-        if follows.count():
-            return reduce(or_, qs).order_by('-timestamp')
+        follows = Follow.objects.filter(user=user)
+        qs = Action.objects.none()
+        for follow in follows:
+            if follow.subject:
+                qs |= Action.objects.stream_for_subject(follow.subject, user)
+        if qs.count():
+            return qs.order_by('-timestamp')
+
     
 class Follow(models.Model):
     """
