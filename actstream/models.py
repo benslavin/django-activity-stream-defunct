@@ -43,7 +43,7 @@ class Follow(models.Model):
     def __unicode__(self):
         return u'%s -> %s' % (self.user, self.subject)
 
-class ActionManager(models.Manager):
+class ActionManager(GFKManager):
     def stream_for_actor(self, actor, user=None):
         """
         Produces a QuerySet of most recent activities for any actor
