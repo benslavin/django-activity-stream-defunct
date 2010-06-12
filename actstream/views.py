@@ -30,7 +30,7 @@ def stream(request):
     Index page for authenticated user's activity stream. (Eg: Your feed at github.com)
     """
     return render_to_response('activity/actor.html', {
-        'action_list':user_stream(request.user).fetch_generic_relations()
+        'action_list':user_stream(request.user)
     }, context_instance=RequestContext(request))
     
 def followers(request, content_type_id, object_id):
@@ -51,7 +51,7 @@ def user(request, username):
     user = get_object_or_404(User, username=username)
     return render_to_response('activity/actor.html', {
         'ctype': ContentType.objects.get_for_model(User),
-        'actor':user,'action_list':actor_stream(user).fetch_generic_relations()
+        'actor':user,'action_list':actor_stream(user)
     }, context_instance=RequestContext(request))
     
 def detail(request, action_id):
@@ -69,7 +69,7 @@ def actor(request, content_type_id, object_id):
     ctype = get_object_or_404(ContentType, pk=content_type_id)
     actor = get_object_or_404(ctype.model_class(), pk=object_id)    
     return render_to_response('activity/actor.html', {
-        'action_list': actor_stream(actor).fetch_generic_relations(), 'actor':actor,'ctype':ctype
+        'action_list': actor_stream(actor), 'actor':actor,'ctype':ctype
     }, context_instance=RequestContext(request))
     
 def model(request, content_type_id):
@@ -79,5 +79,5 @@ def model(request, content_type_id):
     ctype = get_object_or_404(ContentType, pk=content_type_id)
     actor = ctype.model_class()
     return render_to_response('activity/actor.html', {
-        'action_list': model_stream(actor).fetch_generic_relations(),'ctype':ctype,'actor':ctype#._meta.verbose_name_plural.title()
+        'action_list': model_stream(actor),'ctype':ctype,'actor':ctype#._meta.verbose_name_plural.title()
     }, context_instance=RequestContext(request)) 
