@@ -9,10 +9,11 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.conf import settings
+from genericforeignkeys import GFKManager
 
 from actstream.signals import action
 
-class FollowManager(models.Manager):
+class FollowManager(GFKManager):
     def stream_for_user(self, user):
         """
         Produces a QuerySet of most recent activities from subjects the user follows
