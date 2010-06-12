@@ -44,7 +44,7 @@ class GFKQuerySet(QuerySet):
         for (ct_id), items_ in ct_map.items():
             if (ct_id):
                 ct = ContentType.objects.get_for_id(ct_id)
-                for o in ct.model_class().objects.select_related().filter(id__in=items_.keys()).all():
+                for o in ct.model_class().objects.select_related("user","expert_profile","user__expert_profile").filter(id__in=items_.keys()).all():
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
