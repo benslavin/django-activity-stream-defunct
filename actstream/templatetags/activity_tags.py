@@ -1,5 +1,6 @@
 from django.template import Variable, Library, Node, TemplateSyntaxError, TemplateDoesNotExist
 from django.template.loader import render_to_string
+from django.core.cache import cache
 import re
 
 class DisplayActionLabel(Node):
