@@ -8,9 +8,10 @@ class ActionAdmin(admin.ModelAdmin):
     list_filter = ('timestamp',)
 
 class FollowAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__','user','actor')
-    list_editable = ('user',)
-    list_filter = ('user',)
+	pass
+#    list_display = ('__unicode__','user','actor')
+#    list_editable = ('user',)
+#    list_filter = ('user',)
 
 admin.site.register(Action, ActionAdmin)
 admin.site.register(Follow, FollowAdmin)
