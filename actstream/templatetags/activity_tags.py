@@ -34,7 +34,7 @@ class DisplayAction(Node):
     def render(self, context):
         action_instance = self.action.resolve(context)
         try:
-            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }),{ 'action':action_instance },context)
+            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'hide_actor': False, 'verb':action_instance.verb.replace(' ','_') }),{ 'action':action_instance },context)
         except TemplateDoesNotExist:
             action_output = render_to_string(('activity/action.html'),{ 'action':action_instance },context)
         if self.varname is not None:
