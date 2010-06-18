@@ -1,6 +1,5 @@
 from operator import or_
 from django.db import models
-from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
@@ -18,7 +17,7 @@ class FollowManager(GFKManager):
         """
         Produces a QuerySet of most recent activities from subjects the user follows
         """
-        follows = Follow.objects.filter(user=user)
+        follows = self.filter(user=user).select_related("user__first_name")
         qs = Action.objects.none()
         for follow in follows:
             if follow.subject:
@@ -242,4 +241,4 @@ def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
     kw.update(kwargs)
     Action.objects.get_or_create(**kw)[0]
     
-action.connect(action_handler)
+action.connect(action_handler, dispatch_uid="actstream.models")
