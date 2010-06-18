@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}{% ifequal request.user actor %}Your feed{% else %}{{ actor }}{% endifequal %}{% endblock %}
+{% block content_title %}{% ifequal request.user actor %}Your feed{% else %}{{ actor }}{% endifequal %}{% endblock %}
+
+{% block navlinks %}
+<li><a href="{% url actstream_object_feed content_type_id=ctype.id  object_id=actor.id %}">RSS</a></li>
+<li><a href="{% url actstream_object_feed_atom content_type_id=ctype.id  object_id=actor.id %}">ATOM</a></li>
+{% ifequal request.user actor %}{% else %}<li><a href="{% url actstream_follow content_type_id=ctype.id  object_id=actor.id %}">FOLLOW</a></li>{% endifequal %}
+{% endblock %}
+
+{% block content %}
+<ul>
+{% for action in action_list %}
+    <li>{% include 'activity/action.html' %}</li>
+{% empty %}
+No actions yet    
+{% endfor %}
+</ul>
+{% endblock %}

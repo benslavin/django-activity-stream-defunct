@@ -1,7 +1,5 @@
 from django.template import Variable, Library, Node, TemplateSyntaxError, TemplateDoesNotExist
 from django.template.loader import render_to_string
-from django.core.cache import cache
-import re
 
 class DisplayActionLabel(Node):
     def __init__(self, actor, varname=None):
@@ -36,18 +34,9 @@ class DisplayAction(Node):
     def render(self, context):
         action_instance = self.action.resolve(context)
         try:
-            action_template='activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }            
-            action_output = render_to_string(action_template,{ 'hide_actor':False, 'action':action_instance },context)
+            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }),{ 'action':action_instance },context)
         except TemplateDoesNotExist:
-            action_template='activity/action.html'            
-            action_output = render_to_string(action_template,{ 'hide_actor':False, 'action':action_instance },context)
-        try:
-            user = Variable("request.user").resolve(context)
-        except:
-            user = None
-        action_output = re.sub(r'\s+',' ',action_output).strip()
-#        if user and user.is_staff:
-#            action_output = "<!-- start: %(template)s -->\n%(output)s\n<!-- end: %(template)s -->" % {'template':action_template, 'output':action_output}
+            action_output = render_to_string(('activity/action.html'),{ 'action':action_instance },context)
         if self.varname is not None:
             context[self.varname] = action_output
             return ""
@@ -62,18 +51,9 @@ class DisplayActionShort(Node):
     def render(self, context):
         action_instance = self.action.resolve(context)
         try:
-            action_template='activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }            
-            action_output = render_to_string(action_template,{ 'hide_actor':True, 'action':action_instance },context)
+            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }),{ 'hide_actor':True, 'action':action_instance },context)
         except TemplateDoesNotExist:
-            action_template='activity/action.html'            
-            action_output = render_to_string(action_template,{ 'hide_actor':True, 'action':action_instance },context)
-        try:
-            user = Variable("request.user").resolve(context)
-        except:
-            user = None
-        action_output = re.sub(r'\s+',' ',action_output).strip()
-#        if user and user.is_staff:
-#            action_output = "<!-- start: %(template)s -->\n%(output)s\n<!-- end: %(template)s -->" % {'template':action_template, 'output':action_output}
+            action_output = render_to_string(('activity/action.html'),{ 'hide_actor':True, 'action':action_instance },context)
         if self.varname is not None:
             context[self.varname] = action_output
             return ""
@@ -152,4 +132,4 @@ register.tag('action_label', do_print_action_label)
 
 
 
-# just changing it to make it differenter
+# just changing it to make it different
