@@ -22,8 +22,7 @@ class FollowManager(GFKManager):
         for follow in follows:
             if follow.subject:
                 qs |= Action.objects.stream_for_subject(follow.subject, user)
-        if qs.count():
-            return qs.order_by('-timestamp')
+        return qs.order_by('-timestamp')
 
     
 class Follow(models.Model):
