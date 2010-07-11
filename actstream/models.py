@@ -21,7 +21,7 @@ class FollowManager(GFKManager):
         qs = Action.objects.none()
         for follow in follows:
             if follow.subject:
-                qs |= Action.objects.stream_for_subject(follow.subject, user)
+                qs |= Action.objects.stream_for_subject(subject_content_type=follow.content_type, subject_object_id=follow.object_id, user=user)
         return qs.order_by('-timestamp')
 
     
@@ -63,13 +63,17 @@ class ActionManager(GFKManager):
             actor_content_type = ContentType.objects.get_for_model(model),
         ).order_by('-timestamp')
         
-    def stream_for_subject(self, subject, user=None):
+    def stream_for_subject(self, subject=None, subject_content_type=None, subject_object_id=None, user=None):
         """
         Produces a QuerySet of most recent activities for a subject
         """
+        if not subject_content_type:
+            subject_content_type = ContentType.objects.get_for_model(subject)
+        if not subject_object_id:
+            subject_object_id = subject.pk
         return self.filter(
-            subject_content_type = ContentType.objects.get_for_model(subject),
-            subject_object_id = subject.pk,
+            subject_content_type=subject_content_type,
+            subject_object_id=subject_object_id
         ).exclude(public=False).order_by('-timestamp')
         
 class Action(models.Model):
