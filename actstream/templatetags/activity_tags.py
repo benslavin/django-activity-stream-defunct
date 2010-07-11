@@ -19,7 +19,10 @@ class DisplayActionLabel(Node):
                 result = " %s's " % (actor_instance.user.get_full_name() or actor_instance.user.username)
         except (ValueError,AttributeError):
             result = ""
-        result += actor_instance.get_label()
+        try:
+            result += actor_instance.get_label()
+        except:
+            result += actor_instance._meta.verbose_name
         if self.varname is not None:
             context[self.varname] = result
             return ""
