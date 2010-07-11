@@ -22,7 +22,7 @@ class DisplayActionLabel(Node):
         try:
             result += actor_instance.get_label()
         except:
-            result += actor_instance._meta.verbose_name
+            result += unicode(actor_instance)
         if self.varname is not None:
             context[self.varname] = result
             return ""
