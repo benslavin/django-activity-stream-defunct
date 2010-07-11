@@ -13,11 +13,11 @@ class DisplayActionLabel(Node):
         except:
             user = None
         try:
-            if user and hasattr(actor_instance,'user') and user == actor_instance.user:
+            if user and user == actor_instance.user:
                 result=" your "
             else:
                 result = " %s's " % (actor_instance.user.get_full_name() or actor_instance.user.username)
-        except ValueError:
+        except (ValueError,AttributeError):
             result = ""
         result += actor_instance.get_label()
         if self.varname is not None:
