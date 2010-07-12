@@ -63,11 +63,14 @@ class ActionManager(GFKManager):
             actor_content_type = ContentType.objects.get_for_model(model),
         ).order_by('-timestamp')
         
-    def stream_for_subject(self, subject=None, subject_content_type=None, subject_object_id=None, user=None):
+    def stream_for_subject(self, **kwargs):
         """
         Produces a QuerySet of most recent activities for a subject
         """
-        
+        subject = kwargs.get('subject',None)
+        subject_content_type = kwargs.get('subject_content_type',None)
+        subject_object_id = kwargs.get('subject_object_id',None)
+        user = kwargs.get('user',None)
         if not subject_content_type:
             subject_content_type = ContentType.objects.get_for_model(subject)
         if not subject_object_id:
