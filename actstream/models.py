@@ -67,6 +67,7 @@ class ActionManager(GFKManager):
         """
         Produces a QuerySet of most recent activities for a subject
         """
+        
         if not subject_content_type:
             subject_content_type = ContentType.objects.get_for_model(subject)
         if not subject_object_id:
@@ -198,7 +199,7 @@ def actor_stream(actor):
 actor_stream.__doc__ = Action.objects.stream_for_actor.__doc__
     
 def subject_stream(subject):
-    return Action.objects.stream_for_subject(subject)
+    return Action.objects.stream_for_subject(subject=subject)
 subject_stream.__doc__ = Action.objects.stream_for_subject.__doc__
     
 def user_stream(user):
