@@ -71,7 +71,6 @@ class ActionManager(GFKManager):
         subject_content_type = kwargs.get('subject_content_type',None)
         subject_object_id = kwargs.get('subject_object_id',None)
         user = kwargs.get('user',None)
-        #raise Exception("%s" % kwargs.items())
         if not subject_content_type:
             subject_content_type = ContentType.objects.get_for_model(subject)
         if not subject_object_id:
@@ -203,7 +202,7 @@ def actor_stream(actor):
 actor_stream.__doc__ = Action.objects.stream_for_actor.__doc__
     
 def subject_stream(subject):
-    return Action.objects.stream_for_subject(subject)
+    return Action.objects.stream_for_subject(subject=subject)
 subject_stream.__doc__ = Action.objects.stream_for_subject.__doc__
     
 def user_stream(user):
