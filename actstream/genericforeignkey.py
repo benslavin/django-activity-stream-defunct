@@ -9,8 +9,11 @@ try:
     app_label, model_name = settings.AUTH_PROFILE_MODULE.split('.')
     profile_module = models.get_model(app_label, model_name)._meta.module_name
 except Exception, inst:
-    print "%s" % inst
+    result = "%s" % inst
     profile_module = None
+
+def why():
+    print result
 
 class GFKManager(Manager):
     """
