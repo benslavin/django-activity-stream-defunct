@@ -2,6 +2,13 @@ from django.db.models.query import QuerySet
 from django.db.models import Manager
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.generic import GenericForeignKey
+from django.conf import settings
+from django.db import models
+try:
+    app_label, model_name = settings.AUTH_PROFILE_MODULE.split('.')
+    profile_module = models.get_model(app_label, model_name)._meta.module_name
+except AttributeError:
+    profile_module = None
 
 class GFKManager(Manager):
     """
@@ -44,7 +51,10 @@ class GFKQuerySet(QuerySet):
         for (ct_id), items_ in ct_map.items():
             if (ct_id):
                 ct = ContentType.objects.get_for_id(ct_id)
-                for o in ct.model_class().objects.select_related("user","expert_profile","user__expert_profile").filter(id__in=items_.keys()).all():
+                related_fields = ["user__pk"]
+                if profile_module:
+                    related_fields.append("user_%s__pk" % profile_module)
+                for o in ct.model_class().objects.select_related(*related_fields).filter(id__in=items_.keys()).all():
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
