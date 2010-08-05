@@ -5,16 +5,6 @@ from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.db import models
 
-try:
-    app_label, model_name = settings.AUTH_PROFILE_MODULE.split('.')
-    profile_module = models.get_model(app_label, model_name)._meta.module_name
-except Exception, inst:
-    result = "%s" % inst
-    profile_module = None
-
-def why():
-    print result
-
 class GFKManager(Manager):
     """
     A manager that returns a GFKQuerySet instead of a regular QuerySet.
@@ -33,6 +23,14 @@ class GFKQuerySet(QuerySet):
     Firstly improved at http://www.djangosnippets.org/snippets/1079/
 
     """
+    def __init__(self, *args, **kwargs):
+        try:
+            app_label, model_name = settings.AUTH_PROFILE_MODULE.split('.')
+            self.profile_module = models.get_model(app_label, model_name)._meta.module_name
+        except Exception, inst:
+            self.profile_module = None
+        super(GFKQuerySet,self).__init__(*args, **kwargs)
+    
     def fetch_generic_relations(self):
         qs = self._clone()
 
@@ -57,8 +55,8 @@ class GFKQuerySet(QuerySet):
             if (ct_id):
                 ct = ContentType.objects.get_for_id(ct_id)
                 related_fields = ["user__pk"]
-                if profile_module:
-                    related_fields.append("user_%s__pk" % profile_module)
+                if self.profile_module:
+                    related_fields.append("user_%s__pk" % self.profile_module)
                 for o in ct.model_class().objects.select_related(*related_fields).filter(id__in=items_.keys()).all():
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
