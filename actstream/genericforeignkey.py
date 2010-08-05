@@ -4,10 +4,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
 from django.db import models
+
 try:
     app_label, model_name = settings.AUTH_PROFILE_MODULE.split('.')
     profile_module = models.get_model(app_label, model_name)._meta.module_name
-except AttributeError:
+except Exception, inst:
+    print "%s" % inst
     profile_module = None
 
 class GFKManager(Manager):
