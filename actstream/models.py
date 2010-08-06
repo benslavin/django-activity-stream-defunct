@@ -206,7 +206,7 @@ def subject_stream(subject):
 subject_stream.__doc__ = Action.objects.stream_for_subject.__doc__
     
 def user_stream(user):
-    return Follow.objects.stream_for_user(user).fetch_generic_relations()
+    return Follow.objects.stream_for_user(user)
 user_stream.__doc__ = Follow.objects.stream_for_user.__doc__
     
 def model_stream(model):
