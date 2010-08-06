@@ -75,7 +75,6 @@ class GFKQuerySet(QuerySet):
         for item in qs:
             for gfk in gfk_fields:
                 print "getattr(item, '%s', None)=%s" % (gfk.name, getattr(item, gfk.name, None))
-                missing_records.append()
                 if (getattr(item, gfk.fk_field) != None):
                     ct_id_field = self.model._meta.get_field(gfk.ct_field).column
                     print "%s" % type(self.model)
