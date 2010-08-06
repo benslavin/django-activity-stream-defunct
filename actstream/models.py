@@ -8,7 +8,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.conf import settings
-from genericforeignkey import GFKManager
+from actstream.managers import GFKManager
 
 from actstream.signals import action
 
@@ -198,19 +198,19 @@ def unfollow(user, subject, send_action=False):
         action.send(user, verb=_('stopped following'), target=subject)
     
 def actor_stream(actor):
-    return Action.objects.stream_for_actor(actor)
+    return Action.objects.stream_for_actor(actor).fetch_generic_relations()
 actor_stream.__doc__ = Action.objects.stream_for_actor.__doc__
     
 def subject_stream(subject):
-    return Action.objects.stream_for_subject(subject=subject)
+    return Action.objects.stream_for_subject(subject=subject).fetch_generic_relations()
 subject_stream.__doc__ = Action.objects.stream_for_subject.__doc__
     
 def user_stream(user):
-    return Follow.objects.stream_for_user(user)
+    return Follow.objects.stream_for_user(user).fetch_generic_relations()
 user_stream.__doc__ = Follow.objects.stream_for_user.__doc__
     
 def model_stream(model):
-    return Action.objects.stream_for_model(model)
+    return Action.objects.stream_for_model(model).fetch_generic_relations()
 model_stream.__doc__ = Action.objects.stream_for_model.__doc__
 
     
