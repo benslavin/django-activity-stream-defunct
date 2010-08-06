@@ -94,11 +94,11 @@ class GFKQuerySet(QuerySet):
 
 
 
-#        for flds, ct_items_ in missing_records.items():
-#            ct_field, fk_field = flds
-#            for ct, objs in ct_items_.items():
-#                qp = { "%s__pk" % ct_field: ct, "%s__in" % fk_field: objs }
-#                print "About to run qs.exclude(%s)" % (",".join(["%s=%s" % (k,v) for k,v in qp.items()]))
-#                qs &= qs.exclude(**qp)
+        for flds, ct_items_ in missing_records.items():
+            ct_field, fk_field = flds
+            for ct, objs in ct_items_.items():
+                qp = { "%s__pk" % ct_field: ct, "%s__in" % fk_field: objs }
+                print "About to run qs.exclude(%s)" % (",".join(["%s=%s" % (k,v) for k,v in qp.items()]))
+                qs &= qs.exclude(**qp)
         
         return qs
