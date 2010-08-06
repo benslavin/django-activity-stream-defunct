@@ -35,7 +35,7 @@ class GFKQuerySet(QuerySet):
     def fetch_generic_relations(self):
         qs = self._clone()
 
-        print "Just started: So far there are %d queries" % len(connection.queries)
+        #print "Just started: So far there are %d queries" % len(connection.queries)
 
         gfk_fields = [g for g in self.model._meta.virtual_fields if isinstance(g, GenericForeignKey)]
         
@@ -47,18 +47,18 @@ class GFKQuerySet(QuerySet):
         for item in qs:
             for gfk in gfk_fields:
                 ct_id_field = self.model._meta.get_field(gfk.ct_field).column
-                print "ct_id=%s" % getattr(item, ct_id_field)
-                print "item_id=%s" % getattr(item, gfk.fk_field)
-                print "%s %s" % (ct_id_field, getattr(item, ct_id_field))
+                #print "ct_id=%s" % getattr(item, ct_id_field)
+                #print "item_id=%s" % getattr(item, gfk.fk_field)
+                #print "%s %s" % (ct_id_field, getattr(item, ct_id_field))
                 ct_map.setdefault(
                     (getattr(item, ct_id_field)), {}
                     )[getattr(item, gfk.fk_field)] = (gfk.name, item.id)
             item_map[item.id] = item
 
-            print "Looping through sq: So far there are %d queries" % len(connection.queries)
+            #print "Looping through sq: So far there are %d queries" % len(connection.queries)
 
 
-        print "%s" % ct_map.items()
+        #print "%s" % ct_map.items()
 
         for (ct_id), items_ in ct_map.items():
             if (ct_id):
@@ -70,14 +70,14 @@ class GFKQuerySet(QuerySet):
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
-                print "Looping through ct_map.items(): So far there are %d queries" % len(connection.queries)
+                #print "Looping through ct_map.items(): So far there are %d queries" % len(connection.queries)
 
         for item in qs:
             for gfk in gfk_fields:
-                print "getattr(item, '%s', None)=%s" % (gfk.name, getattr(item, gfk.name, None))
+                #print "getattr(item, '%s', None)=%s" % (gfk.name, getattr(item, gfk.name, None))
                 if (getattr(item, gfk.fk_field) != None):
                     ct_id_field = self.model._meta.get_field(gfk.ct_field).column
-                    print "%s" % type(self.model)
+                    #print "%s" % type(self.model)
                     try:
                         setattr(item, gfk.name, data_map[(getattr(item, ct_id_field), getattr(item, gfk.fk_field))])
                     except KeyError:
@@ -90,7 +90,7 @@ class GFKQuerySet(QuerySet):
                                 (gfk.ct_field, gfk.fk_field), {}
                                 ).setdefault(getattr(item, ct_id_field),[]).append(getattr(item, gfk.fk_field))
 
-                print "Looping through qs: So far there are %d queries" % len(connection.queries)
+                #print "Looping through qs: So far there are %d queries" % len(connection.queries)
 
 
 
