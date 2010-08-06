@@ -1,5 +1,6 @@
 from django.db.models.query import QuerySet
 from django.db.models import Manager
+from django.db import connection
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.generic import GenericForeignKey
 from django.conf import settings
@@ -34,23 +35,29 @@ class GFKQuerySet(QuerySet):
     def fetch_generic_relations(self):
         qs = self._clone()
 
+        print "Just started: So far there are %d queries" % len(connection.queries)
+
         gfk_fields = [g for g in self.model._meta.virtual_fields if isinstance(g, GenericForeignKey)]
         
         ct_map = {}
         item_map = {}
         data_map = {}
-        model_map = {}        
         
         for item in qs:
             for gfk in gfk_fields:
-                ct_id_field = selfmodel._meta.get_field(gfk.ct_field).column
-                #print "ct_id=%s" % getattr(item, ct_id_field)
-                #print "item_id=%s" % getattr(item, gfk.fk_field)
-                #print "%s %s" % (ct_id_field, getattr(item, ct_id_field))
+                ct_id_field = self.model._meta.get_field(gfk.ct_field).column
+                print "ct_id=%s" % getattr(item, ct_id_field)
+                print "item_id=%s" % getattr(item, gfk.fk_field)
+                print "%s %s" % (ct_id_field, getattr(item, ct_id_field))
                 ct_map.setdefault(
                     (getattr(item, ct_id_field)), {}
                     )[getattr(item, gfk.fk_field)] = (gfk.name, item.id)
             item_map[item.id] = item
+
+            print "Looping through sq: So far there are %d queries" % len(connection.queries)
+
+
+        print "%s" % ct_map.items()
 
         for (ct_id), items_ in ct_map.items():
             if (ct_id):
@@ -62,25 +69,34 @@ class GFKQuerySet(QuerySet):
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
-        missing_records = {}
+                print "Looping through ct_map.items(): So far there are %d queries" % len(connection.queries)
+
         for item in qs:
             for gfk in gfk_fields:
-                print "getattr(item, '%s', None)=%s" % (gfk.name, getattr(item, gfk.name, None)) 
+                print "getattr(item, '%s', None)=%s" % (gfk.name, getattr(item, gfk.name, None))
+                missing_records.append()
                 if (getattr(item, gfk.fk_field) != None):
                     ct_id_field = self.model._meta.get_field(gfk.ct_field).column
+                    print "%s" % type(self.model)
                     try:
                         setattr(item, gfk.name, data_map[(getattr(item, ct_id_field), getattr(item, gfk.fk_field))])
                     except KeyError:
-                        if ((self.model._meta.get_field(gfk.ct_field).null or self.model._meta.get_field(gfk.ct_field).blank) and 
+                        if ((self.model._meta.get_field(gfk.ct_field).null or self.model._meta.get_field(gfk.ct_field).blank) and
                             (self.model._meta.get_field(gfk.fk_field).null or self.model._meta.get_field(gfk.fk_field).blank)
                         ):
                             setattr(item, gfk.name, None)
                         else:
                             missing_records.setdefault(
-                            )
-                            missing_records.append({ "%s__pk" % gfk.ct_field : getattr(item, ct_id_field), self.model._meta.get_field(gfk.fk_field).column : getattr(item, gfk.fk_field) })
+                                (gfk.ct_field, gfk.fk_field), {}
+                                ).setdefault(getattr(item, ct_id_field),[]).append(getattr(item, gfk.fk_field))
 
-        for mr in missing_records:
-            print 
-            qs = qs.exclude(**mr)
-        return qs
+                print "Looping through qs: So far there are %d queries" % len(connection.queries)
+
+
+
+        for flds, ct_items_ in missing_records.items():
+            ct_field, fk_field = flds
+            for ct, objs in ct_items_.items():
+                qp = { "%s__pk" % ct_field: ct, "%d__in" % fk_field: objs }
+                print "About to run qs.exclude(%s)" % (",".join(["%s=%s" % (k,v) for k,v in qp]))
+                qs = qs.exclude(**mr)
