@@ -66,7 +66,7 @@ class GFKQuerySet(QuerySet):
                 related_fields = ["user__pk"]
                 if self.profile_module:
                     related_fields.append("user_%s__pk" % self.profile_module)
-                for o in ct.model_class().objects.select_related(*related_fields).filter(id__in=items_.keys()).all():
+                for o in ct.model_class().objects.select_related(*related_fields).filter(id__in=items_.keys()):
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
@@ -94,11 +94,11 @@ class GFKQuerySet(QuerySet):
 
 
 
-        for flds, ct_items_ in missing_records.items():
-            ct_field, fk_field = flds
-            for ct, objs in ct_items_.items():
-                qp = { "%s__pk" % ct_field: ct, "%s__in" % fk_field: objs }
-                print "About to run qs.exclude(%s)" % (",".join(["%s=%s" % (k,v) for k,v in qp.items()]))
-                qs &= qs.exclude(**qp)
+#        for flds, ct_items_ in missing_records.items():
+#            ct_field, fk_field = flds
+#            for ct, objs in ct_items_.items():
+#                qp = { "%s__pk" % ct_field: ct, "%s__in" % fk_field: objs }
+#                print "About to run qs.exclude(%s)" % (",".join(["%s=%s" % (k,v) for k,v in qp.items()]))
+#                qs &= qs.exclude(**qp)
         
         return qs
