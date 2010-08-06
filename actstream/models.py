@@ -17,7 +17,7 @@ class FollowManager(GFKManager):
         """
         Produces a QuerySet of most recent activities from subjects the user follows
         """
-        follows = self.filter(user=user).select_related("user__pk","user__expert_profile__pk","content_type__pk")
+        follows = self.filter(user=user).select_related("user__pk","user__expert_profile__pk","content_type__pk").fetch_generic_relations()
         qs = Action.objects.none()
         for follow in follows:
             if follow.subject:
