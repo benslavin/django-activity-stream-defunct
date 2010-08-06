@@ -20,8 +20,7 @@ class FollowManager(GFKManager):
         follows = self.filter(user=user).select_related("user__pk","user__expert_profile__pk","content_type__pk").fetch_generic_relations()
         qs = Action.objects.none()
         for follow in follows:
-            if follow.subject:
-                qs |= Action.objects.stream_for_subject(subject_content_type=follow.content_type, subject_object_id=follow.object_id, user=user)
+            qs |= Action.objects.stream_for_subject(subject_content_type__pk=follow.content_type_id, subject_object_id=follow.object_id)
         return qs.order_by('-timestamp')
 
     
