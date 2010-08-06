@@ -39,10 +39,11 @@ class GFKQuerySet(QuerySet):
         ct_map = {}
         item_map = {}
         data_map = {}
+        model_map = {}        
         
         for item in qs:
             for gfk in gfk_fields:
-                ct_id_field = self.model._meta.get_field(gfk.ct_field).column
+                ct_id_field = selfmodel._meta.get_field(gfk.ct_field).column
                 #print "ct_id=%s" % getattr(item, ct_id_field)
                 #print "item_id=%s" % getattr(item, gfk.fk_field)
                 #print "%s %s" % (ct_id_field, getattr(item, ct_id_field))
@@ -61,10 +62,25 @@ class GFKQuerySet(QuerySet):
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
+        missing_records = {}
         for item in qs:
             for gfk in gfk_fields:
+                print "getattr(item, '%s', None)=%s" % (gfk.name, getattr(item, gfk.name, None)) 
                 if (getattr(item, gfk.fk_field) != None):
                     ct_id_field = self.model._meta.get_field(gfk.ct_field).column
-                    setattr(item, gfk.name, data_map[(getattr(item, ct_id_field), getattr(item, gfk.fk_field))])
+                    try:
+                        setattr(item, gfk.name, data_map[(getattr(item, ct_id_field), getattr(item, gfk.fk_field))])
+                    except KeyError:
+                        if ((self.model._meta.get_field(gfk.ct_field).null or self.model._meta.get_field(gfk.ct_field).blank) and 
+                            (self.model._meta.get_field(gfk.fk_field).null or self.model._meta.get_field(gfk.fk_field).blank)
+                        ):
+                            setattr(item, gfk.name, None)
+                        else:
+                            missing_records.setdefault(
+                            )
+                            missing_records.append({ "%s__pk" % gfk.ct_field : getattr(item, ct_id_field), self.model._meta.get_field(gfk.fk_field).column : getattr(item, gfk.fk_field) })
 
+        for mr in missing_records:
+            print 
+            qs = qs.exclude(**mr)
         return qs
