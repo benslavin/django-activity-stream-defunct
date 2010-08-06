@@ -42,6 +42,7 @@ class GFKQuerySet(QuerySet):
         ct_map = {}
         item_map = {}
         data_map = {}
+        missing_records = {}
         
         for item in qs:
             for gfk in gfk_fields:
