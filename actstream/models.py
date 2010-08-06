@@ -70,10 +70,11 @@ class ActionManager(GFKManager):
         subject_content_type = kwargs.get('subject_content_type',None)
         subject_object_id = kwargs.get('subject_object_id',None)
         user = kwargs.get('user',None)
-        if not subject_content_type:
-            subject_content_type = ContentType.objects.get_for_model(subject)
-        if not subject_object_id:
-            subject_object_id = subject.pk
+        if subject:
+            if not subject_content_type:
+                subject_content_type = ContentType.objects.get_for_model(subject)
+            if not subject_object_id:
+                subject_object_id = subject.pk
         return self.filter(
             subject_content_type=subject_content_type,
             subject_object_id=subject_object_id
