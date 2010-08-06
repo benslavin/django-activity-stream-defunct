@@ -53,7 +53,7 @@ class ActionManager(GFKManager):
         return self.filter(
             actor_content_type = ContentType.objects.get_for_model(actor),
             actor_object_id = actor.pk,
-        ).exclude(public=False).order_by('-timestamp')
+        ).exclude(public=False).fetch_generic_relations().order_by('-timestamp')
         
     def stream_for_model(self, model):
         """
@@ -61,7 +61,7 @@ class ActionManager(GFKManager):
         """
         return self.filter(
             actor_content_type = ContentType.objects.get_for_model(model),
-        ).order_by('-timestamp')
+        ).fetch_generic_relations().order_by('-timestamp')
         
     def stream_for_subject(self, **kwargs):
         """
@@ -78,7 +78,7 @@ class ActionManager(GFKManager):
         return self.filter(
             subject_content_type=subject_content_type,
             subject_object_id=subject_object_id
-        ).exclude(public=False).order_by('-timestamp')
+        ).exclude(public=False).fetch_generic_relations().order_by('-timestamp')
         
 class Action(models.Model):
     """
