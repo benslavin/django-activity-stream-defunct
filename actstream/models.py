@@ -21,7 +21,7 @@ class FollowManager(GFKManager):
         qs = Action.objects.none()
         for follow in follows:
             qs |= Action.objects.stream_for_subject(subject_content_type=follow.content_type, subject_object_id=follow.object_id)
-        return qs.order_by('-timestamp')
+        return qs.fetch_generic_relateions().order_by('-timestamp')
 
     
 class Follow(models.Model):
@@ -78,7 +78,7 @@ class ActionManager(GFKManager):
         return self.filter(
             subject_content_type=subject_content_type,
             subject_object_id=subject_object_id
-        ).exclude(public=False).fetch_generic_relations().order_by('-timestamp')
+        ).exclude(public=False).order_by('-timestamp')
         
 class Action(models.Model):
     """
