@@ -8,6 +8,8 @@ class DisplayActionLabel(Node):
         
     def render(self, context):
         actor_instance = self.actor.resolve(context)
+        if not actor_instance:
+            return None
         try:
             user = Variable("request.user").resolve(context)
         except:
