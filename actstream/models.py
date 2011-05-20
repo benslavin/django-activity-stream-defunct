@@ -221,9 +221,9 @@ def actor_stream(actor):
     return Action.objects.stream_for_actor(actor).fetch_generic_relations()
 actor_stream.__doc__ = Action.objects.stream_for_actor.__doc__
     
-def subject_stream(subject):
-    return Action.objects.stream_for_subject(subject=subject).fetch_generic_relations()
-subject_stream.__doc__ = Action.objects.stream_for_subject.__doc__
+def target_stream(target):
+    return Action.objects.stream_for_target(target=target).fetch_generic_relations()
+target_stream.__doc__ = Action.objects.stream_for_target.__doc__
     
 def user_stream(user):
     return Follow.objects.stream_for_user(user)
