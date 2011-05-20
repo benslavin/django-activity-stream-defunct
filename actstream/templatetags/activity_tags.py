@@ -1,5 +1,7 @@
 from django.template import Variable, Library, Node, TemplateSyntaxError, TemplateDoesNotExist
 from django.template.loader import render_to_string
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 
 class DisplayActionLabel(Node):
     def __init__(self, actor, varname=None):
@@ -8,8 +10,6 @@ class DisplayActionLabel(Node):
         
     def render(self, context):
         actor_instance = self.actor.resolve(context)
-        if not actor_instance:
-            return None
         try:
             user = Variable("request.user").resolve(context)
         except:
@@ -19,12 +19,9 @@ class DisplayActionLabel(Node):
                 result=" your "
             else:
                 result = " %s's " % (actor_instance.user.get_full_name() or actor_instance.user.username)
-        except (ValueError,AttributeError):
+        except ValueError:
             result = ""
-        try:
-            result += actor_instance.get_label()
-        except:
-            result += actor_instance._meta.verbose_name
+        result += actor_instance.get_label()
         if self.varname is not None:
             context[self.varname] = result
             return ""
@@ -39,7 +36,7 @@ class DisplayAction(Node):
     def render(self, context):
         action_instance = self.action.resolve(context)
         try:
-            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }),{ 'action':action_instance, 'hide_actor': False },context)
+            action_output = render_to_string(('activity/%(verb)s/action.html' % { 'verb':action_instance.verb.replace(' ','_') }),{ 'action':action_instance },context)
         except TemplateDoesNotExist:
             action_output = render_to_string(('activity/action.html'),{ 'action':action_instance },context)
         if self.varname is not None:
@@ -125,16 +122,21 @@ def do_print_action_label(parser, token):
         return DisplayActionLabel(bits[1],bits[3])
     else:
         return DisplayActionLabel(bits[1])
-    
 
+def do_get_user_contenttype(parser, token):
+    return UserContentTypeNode(*token.split_contents())
+
+class UserContentTypeNode(Node):
+    def __init__(self, *args):
+        self.args = args
+        
+    def render(self, context):
+        context[self.args[-1]] = ContentType.objects.get_for_model(User)
+        return ''
 
 register = Library()     
 register.tag('display_action', do_print_action)
 register.tag('display_action_short', do_print_action_short)
 register.tag('display_grouped_actions', do_print_grouped_actions)
 register.tag('action_label', do_print_action_label)
-
-
-
-
-# just changing it to make it different
+register.tag('get_user_contenttype', do_get_user_contenttype)

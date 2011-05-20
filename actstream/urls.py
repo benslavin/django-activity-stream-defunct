@@ -1,17 +1,23 @@
 from django.conf.urls.defaults import *
 from django.conf import settings
-from actstream.feeds import *
+from actstream import feeds
 
 urlpatterns = patterns('actstream.views',
-    url(r'^feed/(?P<content_type_id>\d+)/(?P<object_id>\d+)/atom/$', AtomObjectActivityFeed(), name='actstream_object_feed_atom'),
-    url(r'^feed/(?P<content_type_id>\d+)/(?P<object_id>\d+)/$', ObjectActivityFeed(), name='actstream_object_feed'),
-    url(r'^feed/(?P<content_type_id>\d+)/atom/$', AtomModelActivityFeed(), name='actstream_model_feed_atom'),    
-    url(r'^feed/(?P<content_type_id>\d+)/$', ModelActivityFeed(), name='actstream_model_feed'),
-    url(r'^feed/$', UserActivityFeed(), name='actstream_feed'),
-    url(r'^feed/atom/$', AtomUserActivityFeed(), name='actstream_feed_atom'),    
+    # Syndication Feeds
+    url(r'^feed/(?P<content_type_id>\d+)/(?P<object_id>\d+)/atom/$', feeds.AtomObjectActivityFeed(), name='actstream_object_feed_atom'),
+    url(r'^feed/(?P<content_type_id>\d+)/(?P<object_id>\d+)/$', feeds.ObjectActivityFeed(), name='actstream_object_feed'),
+    url(r'^feed/(?P<content_type_id>\d+)/atom/$', feeds.AtomModelActivityFeed(), name='actstream_model_feed_atom'),    
+    url(r'^feed/(?P<content_type_id>\d+)/$', feeds.ModelActivityFeed(), name='actstream_model_feed'),
+    url(r'^feed/$', feeds.UserActivityFeed(), name='actstream_feed'),
+    url(r'^feed/atom/$', feeds.AtomUserActivityFeed(), name='actstream_feed_atom'),    
     
+    # Follow/Unfollow API
     url(r'^follow/(?P<content_type_id>\d+)/(?P<object_id>\d+)/$',
-        'follow', name='actstream_follow'),
+        'follow_unfollow', name='actstream_follow'),
+    url(r'^unfollow/(?P<content_type_id>\d+)/(?P<object_id>\d+)/$',
+        'follow_unfollow', {'do_follow':False}, name='actstream_unfollow'),
+    
+    # Follower and Actor lists
     url(r'^followers/(?P<content_type_id>\d+)/(?P<object_id>\d+)/$',
         'followers', name='actstream_followers'),
     url(r'^actors/(?P<content_type_id>\d+)/(?P<object_id>\d+)/$',

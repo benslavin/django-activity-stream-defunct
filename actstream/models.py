@@ -1,5 +1,7 @@
+from datetime import datetime
 from operator import or_
 from django.db import models
+from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
@@ -17,12 +19,13 @@ class FollowManager(GFKManager):
         """
         Produces a QuerySet of most recent activities from subjects the user follows
         """
-        follows = self.filter(user=user).select_related("user__pk","user__expert_profile__pk","content_type__pk").fetch_generic_relations()
-        qs = Action.objects.none()
-        for follow in follows:
-            qs |= Action.objects.stream_for_subject(subject_content_type=follow.content_type, subject_object_id=follow.object_id)
-        return qs.order_by('-timestamp')
-
+        follows = self.filter(user=user).select_related("user__pk","user__profile__pk","content_type__pk").fetch_generic_relations()
+        qs = (Action.objects.stream_for_actor(follow.subject, follow.started) for follow in follows)
+        qs += (Action.objects.stream_for_target(follow.subject, follow.started) for follow in follows)
+        if follows.count():
+            results = reduce(or_, qs).order_by('-timestamp')
+        else:
+            return Action.objects.none()
     
 class Follow(models.Model):
     """
@@ -36,12 +39,15 @@ class Follow(models.Model):
     started = models.DateTimeField(auto_now_add=True)
     
     objects = FollowManager()
-    
+
+    class Meta:
+        unique_together = ("user", "content_type", "object_id")
+
     def __unicode__(self):
         return u'%s -> %s' % (self.user, self.subject)
 
 class ActionManager(GFKManager):
-    def stream_for_actor(self, actor, user=None):
+    def stream_for_actor(self, actor, user=None, started=None):
         """
         Produces a QuerySet of most recent activities for any actor
 
@@ -49,36 +55,43 @@ class ActionManager(GFKManager):
                 we'll just filter out private actions altogether.
         """
         
-        return self.filter(
+        results = self.filter(
             actor_content_type = ContentType.objects.get_for_model(actor),
             actor_object_id = actor.pk,
         ).exclude(public=False).fetch_generic_relations().order_by('-timestamp')
+        if started:
+            results = results.exclude(timestamp__lt=started)
+        return results
         
     def stream_for_model(self, model):
         """
         Produces a QuerySet of most recent activities for any model
         """
         return self.filter(
-            actor_content_type = ContentType.objects.get_for_model(model),
+            Q(target_content_type = ContentType.objects.get_for_model(model)) |
+            Q(action_object_content_type = ContentType.objects.get_for_model(model))
         ).fetch_generic_relations().order_by('-timestamp')
         
-    def stream_for_subject(self, **kwargs):
+    def stream_for_target(self, started=None, **kwargs):
         """
-        Produces a QuerySet of most recent activities for a subject
+        Produces a QuerySet of most recent activities for a target
         """
-        subject = kwargs.get('subject',None)
-        subject_content_type = kwargs.get('subject_content_type',None)
-        subject_object_id = kwargs.get('subject_object_id',None)
-        user = kwargs.get('user',None)
-        if subject:
-            if not subject_content_type:
-                subject_content_type = ContentType.objects.get_for_model(subject)
-            if not subject_object_id:
-                subject_object_id = subject.pk
-        return self.filter(
-            subject_content_type=subject_content_type,
-            subject_object_id=subject_object_id
-        ).exclude(public=False).order_by('-timestamp')
+        target = kwargs.get('target',None)
+        target_content_type = kwargs.get('target_content_type',None)
+        target_object_id = kwargs.get('target_object_id',None)
+        user = kwargs.get('user', None)
+        if target:
+            if not target_content_type:
+                target_content_type = ContentType.objects.get_for_model(target)
+            if not target_object_id:
+                target_object_id = target.pk
+        results = self.filter(
+            target_content_type=target_content_type,
+            target_object_id=target_object_id
+        ).exclude(public=False).fetch_generic_relations().order_by('-timestamp')
+        if started:
+            results = results.exclude(timestamp__lt=started)
+        return results
         
 class Action(models.Model):
     """
@@ -89,16 +102,19 @@ class Action(models.Model):
     
         <actor> <verb> <time>
         <actor> <verb> <target> <time>
+        <actor> <verb> <action_object> <target> <time>
     
     Examples::
     
         <justquick> <reached level 60> <1 minute ago>
         <brosner> <commented on> <pinax/pinax> <2 hours ago>
         <washingtontimes> <started follow> <justquick> <8 minutes ago>
+        <mitsuhiko> <closed> <issue 70> on <mitsuhiko/flask> <about 3 hours ago>
         
     Unicode Representation::
     
         justquick reached level 60 1 minute ago
+        mitsuhiko closed issue 70 on mitsuhiko/flask 3 hours ago
         
     HTML Representation::
     
@@ -112,15 +128,15 @@ class Action(models.Model):
     verb = models.CharField(max_length=255)
     description = models.TextField(blank=True,null=True)
     
-    subject_content_type = models.ForeignKey(ContentType,related_name='subject',blank=True,null=True)
-    subject_object_id = models.PositiveIntegerField(blank=True,null=True) 
-    subject = generic.GenericForeignKey('subject_content_type','subject_object_id')
-    
     target_content_type = models.ForeignKey(ContentType,related_name='target',blank=True,null=True)
     target_object_id = models.PositiveIntegerField(blank=True,null=True) 
     target = generic.GenericForeignKey('target_content_type','target_object_id')
 
     public = models.BooleanField(default=True)
+    
+    action_object_content_type = models.ForeignKey(ContentType,related_name='action_object',blank=True,null=True)
+    action_object_object_id = models.PositiveIntegerField(blank=True,null=True) 
+    action_object = generic.GenericForeignKey('action_object_content_type','action_object_object_id')
     
     timestamp = models.DateTimeField(auto_now_add=True)
     
@@ -128,8 +144,10 @@ class Action(models.Model):
     
     def __unicode__(self):
         if self.target:
-            return u'%s %s %s %s ago' % \
-                (self.actor, self.verb, self.target, self.timesince())
+            if self.action_object:
+                return u'%s %s %s on %s %s ago' % (self.actor, self.verb, self.action_object, self.target, self.timesince())
+            else:
+                return u'%s %s %s %s ago' % (self.actor, self.verb, self.target, self.timesince())
         return u'%s %s %s ago' % (self.actor, self.verb, self.timesince())
         
     def actor_url(self):
@@ -158,11 +176,12 @@ class Action(models.Model):
         return ('actstream.views.detail', [self.pk])
         
 
-def follow(user, subject):
+def follow(user, actor, send_action=True):
     """
-    Creates a ``User`` -> ``Actor`` follow relationship such that the subject's activities appear in the user's stream.
-    Also sends the ``<user> started following <subject>`` action signal.
-    Returns the created ``Follow`` instance
+    Creates a ``User`` -> ``Actor`` follow relationship such that the actor's activities appear in the user's stream.
+    Also sends the ``<user> started following <actor>`` action signal.
+    Returns the created ``Follow`` instance.
+    If ``send_action`` is false, no "started following" signal will be created
     
     Syntax::
     
@@ -173,12 +192,13 @@ def follow(user, subject):
         follow(request.user, group)
     
     """
-    if not getattr(settings, 'ACTIVITY_HIDE_FOLLOWING', False):
-        action.send(user, verb=_('started following'), target=subject)
-    return Follow.objects.create(user = user, object_id = subject.pk, 
-        content_type = ContentType.objects.get_for_model(subject))
-    
-def unfollow(user, subject, send_action=False):
+    follow,created = Follow.objects.get_or_create(user=user, object_id=actor.pk, 
+        content_type=ContentType.objects.get_for_model(actor))
+    if send_action and created:
+        action.send(user, verb=_('started following'), target=actor)
+    return follow
+
+def unfollow(user, actor, send_action=False):
     """
     Removes ``User`` -> ``Actor`` follow relationship. 
     Optionally sends the ``<user> stopped following <subject>`` action signal.
@@ -212,40 +232,27 @@ user_stream.__doc__ = Follow.objects.stream_for_user.__doc__
 def model_stream(model):
     return Action.objects.stream_for_model(model).fetch_generic_relations()
 model_stream.__doc__ = Action.objects.stream_for_model.__doc__
-
     
-def action_handler(verb, target=None, public=True, subject='actor', **kwargs):
-    actor = kwargs.pop('sender')
+def action_handler(verb, **kwargs):
     kwargs.pop('signal', None)
-    kw = {
-        'actor_content_type': ContentType.objects.get_for_model(actor),
-        'actor_object_id': actor.pk,
-        'verb': unicode(verb),
-        'public': bool(public),
-    }
-    if subject=='actor':
-        kw.update(subject_object_id=actor.pk,
-            subject_content_type=ContentType.objects.get_for_model(actor))
-    elif subject=='target':
-        kw.update(subject_object_id=target.pk,
-            subject_content_type=ContentType.objects.get_for_model(target))
-    else:
-        #assume the subject is some other model
-        try:
-            subject_object_id = subject.pk
-        except AttributeError, inst:
-            raise Exception("Invalid model/object: did not have a primary key: %s" % (type(subject), subject,inst))
-        try:
-            subject_content_type = ContentType.objects.get_for_model(subject)
-        except Exception, inst:
-            raise Exception("Invalid model/object: was not a recognized content type: %s (%s)" % (inst,type(inst)))
-        kw.update(subject_object_id=subject_object_id,
-            subject_content_type=subject_content_type)
-            
+    actor = kwargs.pop('sender')
+    newaction = Action(actor_content_type = ContentType.objects.get_for_model(actor),
+                    actor_object_id = actor.pk,
+                    verb = unicode(verb),
+                    public = bool(kwargs.pop('public', True)),
+                    description = kwargs.pop('description', None),
+                    timestamp = kwargs.pop('timestamp', datetime.now()))
+
+    target = kwargs.pop('target', None)
     if target:
-        kw.update(target_object_id=target.pk,
-            target_content_type=ContentType.objects.get_for_model(target))
-    kw.update(kwargs)
-    Action.objects.get_or_create(**kw)[0]
+        newaction.target_object_id = target.pk
+        newaction.target_content_type = ContentType.objects.get_for_model(target)
+        
+    action_object = kwargs.pop('action_object', None)
+    if action_object:
+        newaction.action_object_object_id = action_object.pk
+        newaction.action_object_content_type = ContentType.objects.get_for_model(action_object)
+
+    newaction.save()
     
 action.connect(action_handler, dispatch_uid="actstream.models")

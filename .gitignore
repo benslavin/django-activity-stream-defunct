@@ -1,5 +1,4 @@
-/.project
-/.pydevproject
-/.gitignore
-/.project
-/.pydevproject
+build
+dist
+*.pyc
+.DS_Store
