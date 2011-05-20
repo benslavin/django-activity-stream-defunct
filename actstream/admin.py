@@ -3,7 +3,7 @@ from actstream.models import Action, Follow
 
 class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'timestamp'
-    list_display = ('__unicode__','actor','subject','verb','target')
+    list_display = ('__unicode__','actor','target','verb','action_object')
     list_editable = ('verb',)
     list_filter = ('timestamp',)
 
