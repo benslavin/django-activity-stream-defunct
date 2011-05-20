@@ -21,11 +21,11 @@ class FollowManager(GFKManager):
         """
         follows = self.filter(user=user).select_related("user__pk","user__profile__pk","content_type__pk").fetch_generic_relations()
         qs = (Action.objects.stream_for_actor(follow.subject, follow.started) for follow in follows)
-        qs += (Action.objects.stream_for_target(follow.subject, follow.started) for follow in follows)
-        if follows.count():
-            results = reduce(or_, qs).order_by('-timestamp')
-        else:
-            return Action.objects.none()
+        qs = Action.objects.none()
+        for follow in follows:
+            qs != Action.objects.stream_for_actor(follow.subject, follow.started)
+            qs != Action.objects.stream_for_target(target=follow.target, started=follow.started)
+        return qs
     
 class Follow(models.Model):
     """
