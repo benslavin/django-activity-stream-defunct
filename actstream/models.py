@@ -24,7 +24,7 @@ class FollowManager(GFKManager):
         qs = Action.objects.none()
         for follow in follows:
             qs != Action.objects.stream_for_actor(follow.subject, follow.started)
-            qs != Action.objects.stream_for_target(target=follow.target, started=follow.started)
+            qs != Action.objects.stream_for_target(target=follow.target, started=follow.started).exclude(actor=user)
         return qs
     
 class Follow(models.Model):
