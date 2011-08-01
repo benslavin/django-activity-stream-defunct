@@ -201,21 +201,21 @@ def follow(user, actor, send_action=True):
 def unfollow(user, actor, send_action=False):
     """
     Removes ``User`` -> ``Actor`` follow relationship. 
-    Optionally sends the ``<user> stopped following <subject>`` action signal.
+    Optionally sends the ``<user> stopped following <actor>`` action signal.
     
     Syntax::
     
-        unfollow(<user>, <subject>)
+        unfollow(<user>, <actor>)
     
     Example::
     
         unfollow(request.user, other_user)
     
     """
-    Follow.objects.filter(user = user, object_id = subject.pk, 
-        content_type = ContentType.objects.get_for_model(subject)).delete()
+    Follow.objects.filter(user = user, object_id = actor.pk, 
+        content_type = ContentType.objects.get_for_model(actor)).delete()
     if send_action:
-        action.send(user, verb=_('stopped following'), target=subject)
+        action.send(user, verb=_('stopped following'), target=actor)
     
 def actor_stream(actor):
     return Action.objects.stream_for_actor(actor).fetch_generic_relations()
