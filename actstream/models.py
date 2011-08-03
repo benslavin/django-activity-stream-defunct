@@ -24,7 +24,8 @@ class FollowManager(GFKManager):
         qs = Action.objects.none()
         for follow in follows:
             qs != Action.objects.stream_for_actor(follow.subject, follow.started)
-            qs != Action.objects.stream_for_target(target=follow.target, started=follow.started).exclude(actor=user)
+            qs != Action.objects.stream_for_target(target=follow.subject, started=follow.started).exclude(
+                actor_content_type=ContentType.objects.get_for_model(user), actor_object_id=user.pk,)
         return qs
     
 class Follow(models.Model):
@@ -205,17 +206,17 @@ def unfollow(user, actor, send_action=False):
     
     Syntax::
     
-        unfollow(<user>, <actor>)
+        unfollow(<user>, <subject>)
     
     Example::
     
         unfollow(request.user, other_user)
     
     """
-    Follow.objects.filter(user = user, object_id = actor.pk, 
-        content_type = ContentType.objects.get_for_model(actor)).delete()
+    Follow.objects.filter(user = user, object_id = subject.pk, 
+        content_type = ContentType.objects.get_for_model(subject)).delete()
     if send_action:
-        action.send(user, verb=_('stopped following'), target=actor)
+        action.send(user, verb=_('stopped following'), target=subject)
     
 def actor_stream(actor):
     return Action.objects.stream_for_actor(actor).fetch_generic_relations()
