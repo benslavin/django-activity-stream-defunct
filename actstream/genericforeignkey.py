@@ -59,7 +59,7 @@ class GFKQuerySet(QuerySet):
                     related_fields.append("user_%s__pk" % self.profile_module)
                 model_class = ct.model_class()
                 id_in = "%s__in" % model_class._meta.pk.name
-                for o in model_class.objects.select_related(*related_fields).filter(id_in=items_.keys()).all():
+                for o in model_class.objects.select_related(*related_fields).filter(**{id_in:items_.keys()}).all():
                     (gfk_name, item_id) = items_[o.id]
                     data_map[(ct_id, o.id)] = o
 
