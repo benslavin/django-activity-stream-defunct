@@ -48,8 +48,8 @@ class GFKQuerySet(QuerySet):
                 #print "%s %s" % (ct_id_field, getattr(item, ct_id_field))
                 ct_map.setdefault(
                     (getattr(item, ct_id_field)), {}
-                    )[getattr(item, gfk.fk_field)] = (gfk.name, item.id)
-            item_map[item.id] = item
+                    )[getattr(item, gfk.fk_field)] = (gfk.name, item.pk)
+            item_map[item.pk] = item
 
         for (ct_id), items_ in ct_map.items():
             if (ct_id):
@@ -60,8 +60,8 @@ class GFKQuerySet(QuerySet):
                 model_class = ct.model_class()
                 id_in = "%s__in" % model_class._meta.pk.name
                 for o in model_class.objects.select_related(*related_fields).filter(**{id_in:items_.keys()}).all():
-                    (gfk_name, item_id) = items_[o.id]
-                    data_map[(ct_id, o.id)] = o
+                    (gfk_name, item_id) = items_[o.pk]
+                    data_map[(ct_id, o.pk)] = o
 
         for item in qs:
             for gfk in gfk_fields:
