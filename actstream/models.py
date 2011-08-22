@@ -213,10 +213,10 @@ def unfollow(user, actor, send_action=False):
         unfollow(request.user, other_user)
     
     """
-    Follow.objects.filter(user = user, object_id = subject.pk, 
-        content_type = ContentType.objects.get_for_model(subject)).delete()
+    Follow.objects.filter(user = user, object_id = actor.pk, 
+        content_type = ContentType.objects.get_for_model(actor)).delete()
     if send_action:
-        action.send(user, verb=_('stopped following'), target=subject)
+        action.send(user, verb=_('stopped following'), target=actor)
     
 def actor_stream(actor):
     return Action.objects.stream_for_actor(actor).fetch_generic_relations()
