@@ -54,12 +54,20 @@ class ActionManager(GFKManager):
 
         Jordan: eventually we do need to filter out public/private actions, but for now
                 we'll just filter out private actions altogether.
+        Bolster: We filter out private actions if the requesting user is not
+                 the user being requested.
         """
         
         results = self.filter(
             actor_content_type = ContentType.objects.get_for_model(actor),
             actor_object_id = actor.pk,
-        ).exclude(public=False).fetch_generic_relations().order_by('-timestamp')
+        )
+
+        if user != actor:
+            results = results.exclude(public=False)
+
+        results = results.fetch_generic_relations().order_by('-timestamp')
+
         if started:
             results = results.exclude(timestamp__lt=started)
         return results
