@@ -37,7 +37,7 @@ class GFKQuerySet(QuerySet):
     def __init__(self, *args, **kwargs):
         try:
             app_label, model_name = settings.AUTH_PROFILE_MODULE.split('.')
-            self.profile_module = models.get_model(app_label, model_name)._meta.module_name
+            self.profile_module = get_model(app_label, model_name)._meta.module_name
         except AttributeError, inst:
             self.profile_module = None
         super(GFKQuerySet,self).__init__(*args, **kwargs)
